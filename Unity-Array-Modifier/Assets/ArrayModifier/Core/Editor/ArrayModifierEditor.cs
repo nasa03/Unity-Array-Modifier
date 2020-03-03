@@ -17,7 +17,7 @@ namespace ArrayModifier
         {
             EditorGUI.BeginChangeCheck();
 
-            _target._fitType = (FitType)EditorGUILayout.EnumPopup(_target._fitType);
+            _target._fitType = (FitType)EditorGUILayout.EnumPopup("Fit Type", _target._fitType);
 
             if (_target._fitType == FitType.FixedCount)
             {
