@@ -46,10 +46,7 @@ namespace ArrayModifier
                 relativeOffsetVector *= (float)i;
 
                 duplicate.transform.position = transform.position + constantOffsetVector + relativeOffsetVector;
-                duplicate.hideFlags = HideFlags.HideInHierarchy | HideFlags.NotEditable | HideFlags.HideInInspector;
                 duplicate.transform.SetParent(transform, true);
-
-                DestroyImmediate(duplicate.GetComponent<ArrayModifier>());
 
                 _duplicates.Add(duplicate);
             }

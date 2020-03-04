@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using System.Linq;
 
 namespace ArrayModifier
 {
@@ -55,6 +56,18 @@ namespace ArrayModifier
                 }
 
                 lastArrayModifierTransform = arrayModifier.transform;
+            }
+
+            foreach (var arrayModifier in arrayModifiers)
+            {
+                var childArrayModifiers = arrayModifier.GetComponentsInChildren<ArrayModifier>()
+                    .Where(a => a.gameObject != _target.gameObject);
+
+                foreach (var childArrayModifier in childArrayModifiers)
+                {
+                    childArrayModifier.gameObject.hideFlags = HideFlags.NotEditable | HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+                    DestroyImmediate(childArrayModifier);
+                }
             }
         }
 
