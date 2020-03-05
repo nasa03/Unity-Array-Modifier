@@ -101,10 +101,5 @@ namespace ArrayModifier
 
             yield return null;
         }
-
-        //private void OnDestroy()
-        //{
-        //    RemoveDuplicates();
-        //}
     }
 }
