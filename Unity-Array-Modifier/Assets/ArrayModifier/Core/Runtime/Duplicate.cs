@@ -1,3 +1,6 @@
 ﻿using UnityEngine;
 
-public class Duplicate : MonoBehaviour {}
+namespace ArrayModifier
+{
+    public class Duplicate : MonoBehaviour {}
+}
