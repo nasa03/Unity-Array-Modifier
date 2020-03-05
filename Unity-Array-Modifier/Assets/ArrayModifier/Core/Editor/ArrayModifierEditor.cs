@@ -7,12 +7,15 @@ namespace ArrayModifier
     [CustomEditor(typeof(ArrayModifier))]
     public class ArrayModifierEditor : Editor
     {
-        private ArrayModifier _target;
+        private ArrayModifier _target = null;
+        private Transform _targetTransform = null;
         private bool _sceneWasDirtyLastTick = false;
         private bool _targetGOWasDirtyLastTick = false;
 
         public override void OnInspectorGUI()
         {
+            base.OnInspectorGUI();
+
             GUILayout.BeginHorizontal();
 
                 if (GUILayout.Button("Refresh"))
@@ -121,6 +124,7 @@ namespace ArrayModifier
         private void Awake()
         {
             _target = target as ArrayModifier;
+            _targetTransform = _target.transform;
         }
 
         private void OnEnable()
@@ -145,10 +149,21 @@ namespace ArrayModifier
 
         private void OnDestroy()
         {
-            if (Application.isPlaying) return;
             if (_target != null) return;
 
-            _target.RemoveDuplicates();
+            if (_targetTransform == null) return;
+
+            if (Application.isEditor)
+            {
+                var duplicates = _targetTransform.GetComponentsInChildren<Duplicate>();
+                if (duplicates == null) return;
+
+                foreach (var duplicate in duplicates)
+                {
+                    if (duplicate == null) continue;
+                    DestroyImmediate(duplicate.gameObject);
+                }
+            }
         }
     }
 }
