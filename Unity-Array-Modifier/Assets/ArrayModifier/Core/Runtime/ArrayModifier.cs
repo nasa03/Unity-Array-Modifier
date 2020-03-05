@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -12,26 +11,16 @@ namespace ArrayModifier
         [HideInInspector] public Vector3 _constantOffset = Vector3.right;
         [HideInInspector] public Vector3 _relativeOffset = Vector3.zero;
 
-        private List<GameObject> _duplicates = new List<GameObject>();
-
         public void RemoveDuplicates()
         {
-            if (_duplicates == null) return;
+            var duplicates = transform.GetComponentsInChildren<Duplicate>();
+            if (duplicates == null) return;
 
-            foreach (var duplicate in _duplicates)
+            foreach (var duplicate in duplicates)
             {
                 if (duplicate == null) continue;
-
-                DestroyImmediate(duplicate);
+                DestroyImmediate(duplicate.gameObject);
             }
-
-            _duplicates.Clear();
-        }
-
-        public void UpdateArrayModifier()
-        {
-            RemoveDuplicates();
-            InstantiateDuplicates();
         }
 
         public void InstantiateDuplicates()
@@ -50,7 +39,7 @@ namespace ArrayModifier
                 duplicate.transform.position = transform.position + constantOffsetVector + relativeOffsetVector;
                 duplicate.transform.SetParent(transform, true);
 
-                _duplicates.Add(duplicate);
+                duplicate.AddComponent<Duplicate>();
             }
 
             DestroyImmediate(prefab);
@@ -63,15 +52,11 @@ namespace ArrayModifier
 
         private IEnumerator CalculateCoroutine() 
         {
-            for (int i = transform.childCount - 1; i >= 0; i--)
-            {
-                DestroyImmediate(transform.GetChild(i).gameObject);
-            }
+            RemoveDuplicates();
 
             var arrayModifiers = GetComponents<ArrayModifier>();
 
             Transform lastArrayModifierTransform = null;
-
             foreach (var arrayModifier in arrayModifiers)
             {
                 arrayModifier.InstantiateDuplicates();
