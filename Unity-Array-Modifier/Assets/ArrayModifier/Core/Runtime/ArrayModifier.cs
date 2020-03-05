@@ -11,6 +11,8 @@ namespace ArrayModifier
         [HideInInspector] public Vector3 _constantOffset = Vector3.right;
         [HideInInspector] public Vector3 _relativeOffset = Vector3.zero;
 
+        private bool _isPrefab = false;
+
         public void RemoveDuplicates()
         {
             var duplicates = transform.GetComponentsInChildren<Duplicate>();
@@ -19,12 +21,24 @@ namespace ArrayModifier
             foreach (var duplicate in duplicates)
             {
                 if (duplicate == null) continue;
-                DestroyImmediate(duplicate.gameObject);
+
+                try
+                {
+                    DestroyImmediate(duplicate.gameObject);
+                }
+                catch
+                {
+                    Debug.LogWarning("Array modifier prefabs are not supported for the time being.");
+                    _isPrefab = true;
+                    break;
+                }
             }
         }
 
         public void InstantiateDuplicates()
         {
+            if (_isPrefab) return;
+
             var prefab = Object.Instantiate(gameObject);
 
             for (int i = 1; i < _count; i++)
