@@ -102,9 +102,9 @@ namespace ArrayModifier
             yield return null;
         }
 
-        private void OnDestroy()
-        {
-            RemoveDuplicates();
-        }
+        //private void OnDestroy()
+        //{
+        //    RemoveDuplicates();
+        //}
     }
 }
