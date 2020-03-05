@@ -107,10 +107,5 @@ namespace ArrayModifier
         {
             RemoveDuplicates();
         }
-
-        private void OnDisable()
-        {
-            RemoveDuplicates();
-        }
     }
 }

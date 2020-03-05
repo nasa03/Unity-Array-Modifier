@@ -11,31 +11,19 @@ namespace ArrayModifier
         private bool _sceneWasDirtyLastTick = false;
         private bool _targetGOWasDirtyLastTick = false;
 
-        private void Awake()
-        {
-            _target = target as ArrayModifier;
-        }
-
-        private void OnEnable()
-        {
-            Undo.undoRedoPerformed += _target.Calculate;
-        }
-
-        private void OnDisable()
-        {
-            Undo.undoRedoPerformed -= _target.Calculate;
-        }
-
         public override void OnInspectorGUI()
         {
             GUILayout.BeginHorizontal();
+
                 if (GUILayout.Button("Refresh"))
                 {
                     _target.Calculate();
                 }
+
             GUILayout.EndHorizontal();
 
             EditorGUI.BeginChangeCheck();
+
                 var fitType = (FitType)EditorGUILayout.EnumPopup(new GUIContent("Fit Type", "Determines which method to use for creating duplicates."), _target._fitType);
 
                 var count = _target._count;
@@ -46,6 +34,7 @@ namespace ArrayModifier
 
                 var constantOffset = EditorGUILayout.Vector3Field(new GUIContent("Constant Offset", "Determines the offset between each object in global space."), _target._constantOffset);
                 var relativeOffset = EditorGUILayout.Vector3Field(new GUIContent("Relative Offset", "Determines the offset between each object in local space."), _target._relativeOffset);
+
             if (EditorGUI.EndChangeCheck())
             {
                 if (fitType != _target._fitType)
@@ -76,16 +65,6 @@ namespace ArrayModifier
             }
         }
 
-        private void OnSceneGUI()
-        {
-            if (_target == null) return;
-
-            CheckForSceneChanges();
-            CheckForTargetGameObjectChanges();
-
-            if (_target.transform.hasChanged) OnChangedTransform();
-        }
-
         private void CheckForSceneChanges() 
         {
             var activeScene = EditorSceneManager.GetActiveScene();
@@ -101,24 +80,24 @@ namespace ArrayModifier
         {
             if (_target == null) return;
 
-            var targetGOIsDirty = false;
+            var targetGameObjectIsDirty = false;
 
             var components = _target.gameObject.GetComponents<MonoBehaviour>();
             foreach (var component in components)
             {
                 if (EditorUtility.IsDirty(component))
                 {
-                    targetGOIsDirty = true;
+                    targetGameObjectIsDirty = true;
                     break;
                 }
             }
 
-            if (targetGOIsDirty && !_targetGOWasDirtyLastTick)
+            if (targetGameObjectIsDirty && !_targetGOWasDirtyLastTick)
             {
                 OnTargetGOChanged();
             }
 
-            _targetGOWasDirtyLastTick = targetGOIsDirty;
+            _targetGOWasDirtyLastTick = targetGameObjectIsDirty;
         }
 
         private void OnSceneChanged() 
@@ -139,8 +118,34 @@ namespace ArrayModifier
             _target.transform.hasChanged = false;
         }
 
+        private void Awake()
+        {
+            _target = target as ArrayModifier;
+        }
+
+        private void OnEnable()
+        {
+            Undo.undoRedoPerformed += _target.Calculate;
+        }
+
+        private void OnDisable()
+        {
+            Undo.undoRedoPerformed -= _target.Calculate;
+        }
+
+        private void OnSceneGUI()
+        {
+            if (_target == null) return;
+
+            CheckForSceneChanges();
+            CheckForTargetGameObjectChanges();
+
+            if (_target.transform.hasChanged) OnChangedTransform();
+        }
+
         private void OnDestroy()
         {
+            if (Application.isPlaying) return;
             if (_target != null) return;
 
             _target.RemoveDuplicates();
