@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -46,9 +47,7 @@ namespace ArrayModifier
                 var duplicate = Object.Instantiate(prefab);
 
                 var constantOffsetVector = _constantOffset * (float)i;
-
-                var relativeOffsetVector = transform.right * _relativeOffset.x + transform.up * _relativeOffset.y + transform.forward * _relativeOffset.z;
-                relativeOffsetVector *= (float)i;
+                var relativeOffsetVector = transform.TransformVector(_relativeOffset * (float)i);
 
                 duplicate.transform.position = transform.position + constantOffsetVector + relativeOffsetVector;
                 duplicate.transform.SetParent(transform, true);
