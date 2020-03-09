@@ -1,9 +1,11 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace ArrayModifier
 {
+    [ExecuteInEditMode]
     public class ArrayModifier : MonoBehaviour
     {
         [HideInInspector] public FitType _fitType = FitType.FixedCount;
@@ -18,46 +20,84 @@ namespace ArrayModifier
         private MeshRenderer _meshRenderer = null;
         private SpriteRenderer _spriteRenderer = null;
 
+        private List<GameObject> _duplicates = new List<GameObject>();
+
+        public List<GameObject> GetDuplicates() 
+        {
+            return _duplicates;
+        }
+
         public void RemoveDuplicates()
         {
-            var duplicates = transform.GetComponentsInChildren<Duplicate>();
-            if (duplicates == null) return;
-
-            foreach (var duplicate in duplicates)
+            foreach (var arrayModifier in GetComponents<ArrayModifier>())
             {
-                if (duplicate == null) continue;
+                var duplicates = arrayModifier.GetDuplicates();
+                if (duplicates == null) continue;
 
-                try
+                for (int i = duplicates.Count - 1; i >= 0; i--)
                 {
-                    DestroyImmediate(duplicate.gameObject);
-                }
-                catch
-                {
-                    Debug.LogWarning("Array modifier prefabs are not supported for the time being.");
-                    _isPrefab = true;
-                    break;
+                    if (duplicates[i] == null) continue;
+
+                    try
+                    {
+                        DestroyImmediate(duplicates[i]);
+                        duplicates.RemoveAt(i);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogError("Index = " + i);
+                        Debug.LogError(e.Message);
+                        Debug.LogWarning("Array modifier prefabs are not supported for the time being.");
+                        _isPrefab = true;
+                        break;
+                    }
                 }
             }
         }
 
-        public void InstantiateDuplicates()
+        public void InstantiateDuplicates(int arrayModifierIndex)
         {
             if (_isPrefab) return;
 
             var prefab = Object.Instantiate(gameObject);
-
-            for (int i = 1; i < _count; i++)
+            GameObject previousDuplicate = null;
+            
+            for (int i = 0; i < _count - 1; i++)
             {
-                var duplicate = Object.Instantiate(prefab);
+                var duplicateGameObject = Object.Instantiate(prefab);
+                duplicateGameObject.hideFlags = HideFlags.HideInHierarchy;
 
-                var constantOffsetVector = _constantOffset * (float)i;
-                var relativeOffsetVector = transform.TransformVector(new Vector3(_relativeOffset.x * _size.x, _relativeOffset.y * _size.y, _relativeOffset.z * _size.z) * (float)i);
+                // Set position
+                if (previousDuplicate == null)
+                {
+                    duplicateGameObject.transform.position = transform.position;
+                }
+                else 
+                {
+                    duplicateGameObject.transform.position = previousDuplicate.transform.position;
+                }
 
-                duplicate.transform.position = transform.position + constantOffsetVector + relativeOffsetVector;
-                duplicate.transform.SetParent(transform, true); // TODO: Remove the parent relationship, since the local scale of the 
-                                                                // parent shouldn't affect the object being duplicated
+                duplicateGameObject.transform.Translate(_constantOffset, Space.World);
+                duplicateGameObject.transform.Translate(new Vector3(_relativeOffset.x * _size.x, _relativeOffset.y * _size.y, _relativeOffset.z * _size.z), Space.Self);
 
-                duplicate.AddComponent<Duplicate>();
+                // Destroy all the array modifiers up to arrayModifierIndex
+                for (int j = 0; j <= arrayModifierIndex; j++)
+                {
+                    var arrayModifierToDestroy = duplicateGameObject.GetComponents<ArrayModifier>().FirstOrDefault();
+                    if (arrayModifierToDestroy == default(ArrayModifier)) break;
+                    DestroyImmediate(arrayModifierToDestroy);
+                }
+
+                // Repeat this process on the duplicate if an array modifier still exists
+                // on the duplicate
+                var arrayModifier = duplicateGameObject.GetComponents<ArrayModifier>().FirstOrDefault();
+                if (arrayModifier != default(ArrayModifier))
+                {
+                    arrayModifier.Calculate();
+                }
+
+                previousDuplicate = duplicateGameObject;
+                _duplicates.Add(duplicateGameObject);
             }
 
             DestroyImmediate(prefab);
@@ -75,34 +115,9 @@ namespace ArrayModifier
             RemoveDuplicates();
 
             var arrayModifiers = GetComponents<ArrayModifier>();
-
-            Transform lastArrayModifierTransform = null;
-            foreach (var arrayModifier in arrayModifiers)
+            for (int i = 0; i < arrayModifiers.Length; i++)
             {
-                arrayModifier.InstantiateDuplicates();
-
-                if (lastArrayModifierTransform != null)
-                {
-                    arrayModifier.transform.SetParent(lastArrayModifierTransform, true);
-                }
-
-                lastArrayModifierTransform = arrayModifier.transform;
-            }
-
-            foreach (var arrayModifier in arrayModifiers)
-            {
-                if (arrayModifier == null) continue;
-
-                var childArrayModifiers = arrayModifier.GetComponentsInChildren<ArrayModifier>()
-                    .Where(a => a.gameObject != this.gameObject);
-
-                foreach (var childArrayModifier in childArrayModifiers)
-                {
-                    childArrayModifier.gameObject.hideFlags = HideFlags.NotEditable | HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-                    DestroyImmediate(childArrayModifier);
-                }
-
-                yield return null;
+                arrayModifiers[i].InstantiateDuplicates(i);
             }
 
             yield return null;
@@ -138,6 +153,11 @@ namespace ArrayModifier
             {
                 _size = transform.localScale;
             }
+        }
+
+        private void OnDestroy()
+        {
+            RemoveDuplicates();
         }
     }
 }

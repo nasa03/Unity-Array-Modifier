@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using System.Collections.Generic;
 
 namespace ArrayModifier
 {
@@ -11,6 +12,7 @@ namespace ArrayModifier
         private Transform _targetTransform = null;
         private bool _sceneWasDirtyLastTick = false;
         private bool _targetGOWasDirtyLastTick = false;
+        private List<GameObject> _duplicates = new List<GameObject>();
 
         public override void OnInspectorGUI()
         {
@@ -18,25 +20,25 @@ namespace ArrayModifier
 
             GUILayout.BeginHorizontal();
 
-                if (GUILayout.Button("Refresh"))
-                {
-                    _target.Calculate();
-                }
+            if (GUILayout.Button("Refresh"))
+            {
+                _target.Calculate();
+            }
 
             GUILayout.EndHorizontal();
 
             EditorGUI.BeginChangeCheck();
 
-                var fitType = (FitType)EditorGUILayout.EnumPopup(new GUIContent("Fit Type", "Determines which method to use for creating duplicates."), _target._fitType);
+            var fitType = (FitType)EditorGUILayout.EnumPopup(new GUIContent("Fit Type", "Determines which method to use for creating duplicates."), _target._fitType);
 
-                var count = _target._count;
-                if (_target._fitType == FitType.FixedCount)
-                {
-                    count = EditorGUILayout.DelayedIntField(new GUIContent("Count", "Determines how many duplicates will get created."), _target._count);
-                }
+            var count = _target._count;
+            if (_target._fitType == FitType.FixedCount)
+            {
+                count = EditorGUILayout.DelayedIntField(new GUIContent("Count", "Determines how many duplicates will get created."), _target._count);
+            }
 
-                var constantOffset = EditorGUILayout.Vector3Field(new GUIContent("Constant Offset", "Determines the offset between each object in global space."), _target._constantOffset);
-                var relativeOffset = EditorGUILayout.Vector3Field(new GUIContent("Relative Offset", "Determines the offset between each object in local space."), _target._relativeOffset);
+            var constantOffset = EditorGUILayout.Vector3Field(new GUIContent("Constant Offset", "Determines the offset between each object in global space."), _target._constantOffset);
+            var relativeOffset = EditorGUILayout.Vector3Field(new GUIContent("Relative Offset", "Determines the offset between each object in local space."), _target._relativeOffset);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -68,7 +70,7 @@ namespace ArrayModifier
             }
         }
 
-        private void CheckForSceneChanges() 
+        private void CheckForSceneChanges()
         {
             var activeScene = EditorSceneManager.GetActiveScene();
             if (activeScene.isDirty && !_sceneWasDirtyLastTick)
@@ -79,7 +81,7 @@ namespace ArrayModifier
             _sceneWasDirtyLastTick = activeScene.isDirty;
         }
 
-        private void CheckForTargetGameObjectChanges() 
+        private void CheckForTargetGameObjectChanges()
         {
             if (_target == null) return;
 
@@ -103,7 +105,7 @@ namespace ArrayModifier
             _targetGOWasDirtyLastTick = targetGameObjectIsDirty;
         }
 
-        private void OnSceneChanged() 
+        private void OnSceneChanged()
         {
             _target.Calculate();
             SceneView.RepaintAll();
@@ -116,9 +118,14 @@ namespace ArrayModifier
         }
 
         private void OnChangedTransform()
-        { 
+        {
             _target.Calculate();
             _target.transform.hasChanged = false;
+        }
+
+        private void GetDuplicates()
+        {
+            _duplicates = _target.GetDuplicates();
         }
 
         private void Awake()
@@ -135,6 +142,7 @@ namespace ArrayModifier
         private void OnDisable()
         {
             Undo.undoRedoPerformed -= _target.Calculate;
+            GetDuplicates();
         }
 
         private void OnSceneGUI()
@@ -150,19 +158,14 @@ namespace ArrayModifier
         private void OnDestroy()
         {
             if (_target != null) return;
-
             if (_targetTransform == null) return;
+            if (Application.isPlaying) return;
 
-            if (Application.isEditor)
+            if (_duplicates == null) return;
+
+            for (int i = _duplicates.Count - 1; i >= 0; i--)
             {
-                var duplicates = _targetTransform.GetComponentsInChildren<Duplicate>();
-                if (duplicates == null) return;
-
-                foreach (var duplicate in duplicates)
-                {
-                    if (duplicate == null) continue;
-                    DestroyImmediate(duplicate.gameObject);
-                }
+                DestroyImmediate(_duplicates[i]);
             }
         }
     }
