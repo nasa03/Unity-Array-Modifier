@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -13,6 +12,11 @@ namespace ArrayModifier
         [HideInInspector] public Vector3 _relativeOffset = Vector3.zero;
 
         private bool _isPrefab = false;
+        private Vector3 _size = Vector3.one;
+        private Collider _collider = null;
+        private Collider2D _collider2D = null;
+        private MeshRenderer _meshRenderer = null;
+        private SpriteRenderer _spriteRenderer = null;
 
         public void RemoveDuplicates()
         {
@@ -47,10 +51,11 @@ namespace ArrayModifier
                 var duplicate = Object.Instantiate(prefab);
 
                 var constantOffsetVector = _constantOffset * (float)i;
-                var relativeOffsetVector = transform.TransformVector(_relativeOffset * (float)i);
+                var relativeOffsetVector = transform.TransformVector(new Vector3(_relativeOffset.x * _size.x, _relativeOffset.y * _size.y, _relativeOffset.z * _size.z) * (float)i);
 
                 duplicate.transform.position = transform.position + constantOffsetVector + relativeOffsetVector;
-                duplicate.transform.SetParent(transform, true);
+                duplicate.transform.SetParent(transform, true); // TODO: Remove the parent relationship, since the local scale of the 
+                                                                // parent shouldn't affect the object being duplicated
 
                 duplicate.AddComponent<Duplicate>();
             }
@@ -65,6 +70,8 @@ namespace ArrayModifier
 
         private IEnumerator CalculateCoroutine() 
         {
+            GetComponents();
+            DetermineSize();
             RemoveDuplicates();
 
             var arrayModifiers = GetComponents<ArrayModifier>();
@@ -99,6 +106,38 @@ namespace ArrayModifier
             }
 
             yield return null;
+        }
+
+        private void GetComponents() 
+        {
+            if (_meshRenderer == null) GetComponent<MeshRenderer>();
+            if (_collider == null) GetComponent<Collider>();
+            if (_spriteRenderer == null) GetComponent<SpriteRenderer>();
+            if (_collider2D == null) GetComponent<Collider2D>();
+        }
+
+        private void DetermineSize() 
+        {
+            if (_meshRenderer != null)
+            {
+                _size = _meshRenderer.bounds.size;
+            }
+            else if (_spriteRenderer != null)
+            {
+                _size = _spriteRenderer.bounds.size;
+            }
+            else if (_collider != null)
+            {
+                _size = _collider.bounds.size;
+            }
+            else if (_collider2D != null)
+            {
+                _size = _collider2D.bounds.size;
+            }
+            else
+            {
+                _size = transform.localScale;
+            }
         }
     }
 }
