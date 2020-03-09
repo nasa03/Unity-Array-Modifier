@@ -32,9 +32,14 @@ namespace ArrayModifier
             var fitType = (FitType)EditorGUILayout.EnumPopup(new GUIContent("Fit Type", "Determines which method to use for creating duplicates."), _target._fitType);
 
             var count = _target._count;
+            var fitLength = _target._fitLength;
             if (_target._fitType == FitType.FixedCount)
             {
                 count = EditorGUILayout.DelayedIntField(new GUIContent("Count", "Determines how many duplicates will get created."), _target._count);
+            }
+            else if (_target._fitType == FitType.Length)
+            {
+                fitLength = EditorGUILayout.DelayedFloatField(new GUIContent("Length", "Determines at which length to duplicate to."), _target._fitLength);
             }
 
             var constantOffset = EditorGUILayout.Vector3Field(new GUIContent("Constant Offset", "Determines the offset between each object in global space."), _target._constantOffset);
@@ -52,6 +57,12 @@ namespace ArrayModifier
                 {
                     Undo.RecordObject(_target, "Changed count");
                     _target._count = count;
+                }
+
+                if (fitLength != _target._fitLength)
+                {
+                    Undo.RecordObject(_target, "Changed fit length");
+                    _target._fitLength = fitLength;
                 }
 
                 if (constantOffset != _target._constantOffset)

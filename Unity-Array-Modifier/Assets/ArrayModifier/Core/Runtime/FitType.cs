@@ -2,6 +2,7 @@
 {
     public enum FitType
     { 
-        FixedCount
+        FixedCount,
+        Length
     }
 }
